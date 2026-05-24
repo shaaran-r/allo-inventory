@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Allo inventory reservation API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: products
+    description: Product operations
+  - name: warehouses
+    description: Warehouse operations
+  - name: reservations
+    description: Reservation operations
 paths:
   /healthz:
     get:
@@ -24,6 +30,157 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List products with available stock per warehouse
+      responses:
+        "200":
+          description: List of products with stock levels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductWithStock"
+
+  /warehouses:
+    get:
+      operationId: listWarehouses
+      tags: [warehouses]
+      summary: List all warehouses
+      responses:
+        "200":
+          description: List of warehouses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Warehouse"
+
+  /reservations:
+    post:
+      operationId: createReservation
+      tags: [reservations]
+      summary: Reserve units for a product/warehouse
+      description: Reserve units. Returns 409 if insufficient stock available.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReservationInput"
+      responses:
+        "201":
+          description: Reservation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "409":
+          description: Insufficient stock available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /reservations/{id}/confirm:
+    post:
+      operationId: confirmReservation
+      tags: [reservations]
+      summary: Confirm reservation (payment succeeded)
+      description: Confirm a pending reservation. Returns 410 if reservation has expired.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reservation confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "404":
+          description: Reservation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Reservation already confirmed or released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Reservation expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /reservations/{id}/release:
+    post:
+      operationId: releaseReservation
+      tags: [reservations]
+      summary: Release reservation early (payment failed or user cancelled)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reservation released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "404":
+          description: Reservation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Reservation already confirmed or released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /reservations/{id}:
+    get:
+      operationId: getReservation
+      tags: [reservations]
+      summary: Get a single reservation by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reservation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "404":
+          description: Reservation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +191,113 @@ components:
       required:
         - status
 
+    Product:
+      type: object
+      required: [id, name, sku, description, createdAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        sku:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+
+    StockLevel:
+      type: object
+      required: [warehouseId, warehouseName, warehouseLocation, totalUnits, reservedUnits, availableUnits]
+      properties:
+        warehouseId:
+          type: string
+        warehouseName:
+          type: string
+        warehouseLocation:
+          type: string
+        totalUnits:
+          type: integer
+        reservedUnits:
+          type: integer
+        availableUnits:
+          type: integer
+
+    ProductWithStock:
+      type: object
+      required: [id, name, sku, description, createdAt, stockLevels]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        sku:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+        stockLevels:
+          type: array
+          items:
+            $ref: "#/components/schemas/StockLevel"
+
+    Warehouse:
+      type: object
+      required: [id, name, location, createdAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        location:
+          type: string
+        createdAt:
+          type: string
+
+    Reservation:
+      type: object
+      required: [id, productId, productName, warehouseId, warehouseName, quantity, status, expiresAt, createdAt]
+      properties:
+        id:
+          type: string
+        productId:
+          type: string
+        productName:
+          type: string
+        productSku:
+          type: string
+        warehouseId:
+          type: string
+        warehouseName:
+          type: string
+        quantity:
+          type: integer
+        status:
+          type: string
+          enum: [pending, confirmed, released]
+        expiresAt:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    ReservationInput:
+      type: object
+      required: [productId, warehouseId, quantity]
+      properties:
+        productId:
+          type: string
+        warehouseId:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
