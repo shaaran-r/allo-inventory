@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Package, MapPin, Database } from "lucide-react";
 import { ReserveDialog } from "@/components/reserve-dialog";
-import { ProductWithStock } from "@workspace/api-client-react/src/generated/api.schemas";
+import { type ProductWithStock } from "@workspace/api-client-react";
 
 export default function Home() {
   const { data: products, isLoading, error } = useListProducts();

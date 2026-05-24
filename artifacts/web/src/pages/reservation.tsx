@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { useGetReservation, useConfirmReservation, useReleaseReservation, getGetReservationQueryKey, getListProductsQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -72,6 +72,10 @@ export default function ReservationDetail() {
 
   const confirmMutation = useConfirmReservation();
   const releaseMutation = useReleaseReservation();
+
+  const handleExpire = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: getGetReservationQueryKey(id) });
+  }, [id, queryClient]);
 
   const handleConfirm = () => {
     confirmMutation.mutate({ id }, {
@@ -201,7 +205,7 @@ export default function ReservationDetail() {
                 </div>
                 <CountdownTimer 
                   expiresAt={reservation.expiresAt} 
-                  onExpire={() => queryClient.invalidateQueries({ queryKey: getGetReservationQueryKey(id) })} 
+                  onExpire={handleExpire}
                 />
               </div>
             )}

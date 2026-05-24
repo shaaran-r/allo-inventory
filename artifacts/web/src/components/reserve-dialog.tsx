@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ProductWithStock } from "@workspace/api-client-react/src/generated/api.schemas";
-import { useCreateReservation, getListProductsQueryKey } from "@workspace/api-client-react";
+import { useCreateReservation, getListProductsQueryKey, type ProductWithStock, type StockLevel } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Package } from "lucide-react";
 
@@ -34,7 +33,7 @@ export function ReserveDialog({ product, onClose }: ReserveDialogProps) {
     }
   };
 
-  const selectedWarehouse = product?.stockLevels.find(w => w.warehouseId === warehouseId);
+  const selectedWarehouse = product?.stockLevels.find((w: StockLevel) => w.warehouseId === warehouseId);
   const maxAvailable = selectedWarehouse?.availableUnits || 0;
   const numQuantity = parseInt(quantity, 10);
   const isValid = warehouseId !== "" && !isNaN(numQuantity) && numQuantity > 0 && numQuantity <= maxAvailable;
@@ -95,7 +94,7 @@ export function ReserveDialog({ product, onClose }: ReserveDialogProps) {
                 <SelectValue placeholder="Select location..." />
               </SelectTrigger>
               <SelectContent className="rounded-none border-border">
-                {product.stockLevels.map((loc) => (
+                {product.stockLevels.map((loc: StockLevel) => (
                   <SelectItem 
                     key={loc.warehouseId} 
                     value={loc.warehouseId}
@@ -128,7 +127,7 @@ export function ReserveDialog({ product, onClose }: ReserveDialogProps) {
 
           {createMutation.error && (
              <div className="p-3 bg-destructive/10 border border-destructive text-destructive font-mono text-sm">
-               Error: {(createMutation.error as any)?.data?.error || "Request failed"}
+               Error: {(createMutation.error as any)?.data?.error ?? (createMutation.error as any)?.message ?? "Request failed"}
              </div>
           )}
 
